@@ -9,7 +9,7 @@
 | 平台 | 状态 |
 |------|------|
 | macOS 12+（Apple Silicon / Intel） | ✅ 已支持 |
-| Windows | 🚧 开发中 |
+| Windows | ✅ 已支持 |
 | Linux | 📋 计划中 |
 
 **IM 软件支持**
@@ -150,7 +150,7 @@ msg-dots/
 │   ├── scripts/                        # 图标生成脚本
 │   ├── build.sh                        # swift build → .app
 │   └── build-dmg.sh                    # .app → DMG
-├── windows/                            ← Windows 版（计划中）
+├── windows/                            ← Windows 版
 └── docs/
     └── demo.gif
 ```
@@ -217,7 +217,7 @@ MIT
 **macOS**
 - Swift / AppKit / SwiftUI / CoreGraphics / ApplicationServices（Apple 一方库）
 
-**Windows**（开发中）
+**Windows**
 - C# / .NET / Windows App SDK
 
 **通用**
