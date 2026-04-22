@@ -1,6 +1,6 @@
 //
 //  LabelOverlay.swift
-//  Transparent, click-through overlay that stamps A–H circles next to bubbles.
+//  Transparent, click-through overlay that stamps letter circles next to bubbles.
 //
 //  Port of `overlay/label_overlay.py`.
 //

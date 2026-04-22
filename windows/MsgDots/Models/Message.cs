@@ -3,7 +3,8 @@ using System.Drawing;
 namespace MsgDots.Models;
 
 /// <summary>
-/// A detected chat bubble.  Coordinates are in screen pixels (top-left origin).
+/// A detected chat bubble.  Coordinates are in WPF logical screen pixels
+/// (DIPs, top-left origin).
 /// Mirrors macOS Message.swift.
 /// </summary>
 public record Message(

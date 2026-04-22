@@ -21,7 +21,7 @@ enum Config {
     ]
 
     // MARK: - Overlay labels
-    static let labelLetters: [String] = ["A", "B", "C", "D", "E", "F", "G", "H"]
+    static let labelLetters: [String] = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ").map(String.init)
     static var maxMessages: Int { labelLetters.count }
 
     static let labelDiameter: CGFloat = 28

@@ -7,7 +7,7 @@
 //  `NSEvent.addGlobalMonitorForEvents` is strictly READ-ONLY — it can
 //  see events headed to other apps but cannot stop them.  That's fine
 //  for the Ctrl+Q hotkey, but during the overlay we need to SWALLOW
-//  the A-H / Esc keys so they don't also land in WeChat's input field
+//  the overlay letter / Esc keys so they don't also land in WeChat's input field
 //  (producing the "typed letter then flash" behaviour).
 //
 //  CGEventTap is the only macOS API that can both observe and drop

@@ -6,7 +6,6 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
-        WindowState="Maximized"
         Left="0" Top="0"
         Focusable="False">
     <!--

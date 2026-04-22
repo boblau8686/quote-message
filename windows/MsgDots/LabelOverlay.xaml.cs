@@ -15,7 +15,7 @@ record PickedOutcome(char Letter, Message Message) : OverlayOutcome;
 
 /// <summary>
 /// Full-screen transparent overlay that paints red circles + letters
-/// next to each detected bubble, and swallows A–H / Escape key presses.
+/// next to each detected bubble, and swallows overlay letter / Escape key presses.
 /// Mirrors macOS LabelOverlay.swift.
 /// </summary>
 partial class LabelOverlay : Window
@@ -28,11 +28,14 @@ partial class LabelOverlay : Window
 
     static readonly Brush LabelFill = new SolidColorBrush(Color.FromRgb(229, 57, 53));
     static readonly Brush LabelText = Brushes.White;
+    static readonly char[] LabelLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();
     const double CircleR = 14;
 
     private readonly List<Message> _messages;
     private readonly Action<OverlayOutcome> _completion;
     private readonly KeyboardHook _hook;
+    private readonly double _originX;
+    private readonly double _originY;
 
     internal LabelOverlay(List<Message> messages, Action<OverlayOutcome> completion)
     {
@@ -41,6 +44,13 @@ partial class LabelOverlay : Window
         _hook       = new KeyboardHook { ShouldSwallow = OnKey };
 
         InitializeComponent();
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Left   = SystemParameters.VirtualScreenLeft;
+        Top    = SystemParameters.VirtualScreenTop;
+        Width  = SystemParameters.VirtualScreenWidth;
+        Height = SystemParameters.VirtualScreenHeight;
+        _originX = Left;
+        _originY = Top;
         Loaded += OnLoaded;
     }
 
@@ -58,16 +68,16 @@ partial class LabelOverlay : Window
     private void DrawLabels()
     {
         Canvas.Children.Clear();
-        for (int i = 0; i < _messages.Count && i < 8; i++)
+        for (int i = 0; i < _messages.Count && i < LabelLetters.Length; i++)
         {
             var msg  = _messages[i];
-            char lbl = (char)('A' + i);
+            char lbl = LabelLetters[i];
 
             // Place circle opposite avatar: right of received, left of sent
             double cx = msg.FromSelf
-                ? msg.X - CircleR - 6
-                : msg.X + msg.Width + CircleR + 6;
-            double cy = msg.Y + msg.Height / 2.0;
+                ? msg.X - CircleR - 6 - _originX
+                : msg.X + msg.Width + CircleR + 6 - _originX;
+            double cy = msg.Y + msg.Height / 2.0 - _originY;
 
             // Circle
             var ellipse = new Ellipse
@@ -105,10 +115,10 @@ partial class LabelOverlay : Window
         }
 
         int idx = key - Keys.A;
-        if (idx >= 0 && idx < _messages.Count)
+        if (idx >= 0 && idx < _messages.Count && idx < LabelLetters.Length)
         {
             var msg  = _messages[idx];
-            char lbl = (char)('A' + idx);
+            char lbl = LabelLetters[idx];
             Dispatcher.Invoke(Dismiss);
             _completion(new PickedOutcome(lbl, msg));
             return true;   // swallow

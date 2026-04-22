@@ -24,7 +24,7 @@ static class BubbleDetector
 
     // ── Public entry point ────────────────────────────────────────────────
 
-    public static List<Message> DetectRecentMessages(int limit = 8)
+    public static List<Message> DetectRecentMessages(int limit = 26)
     {
         var hWnd = FindWeChatWindow();
         if (hWnd == IntPtr.Zero)
@@ -46,13 +46,9 @@ static class BubbleDetector
         using var bmp = CaptureWindow(hWnd, pw, ph);
         var messages = AnalyzeBitmap(bmp, rect.Left, rect.Top, scale, limit);
         QMLog.Info($"pixel scan found {messages.Count} bubble(s)");
-
-        if (messages.Count == 0)
-        {
-            QMLog.Info("falling back to stub data");
-            messages = StubMessages(rect.Left / scale, rect.Top / scale,
-                                    pw / scale, ph / scale, limit);
-        }
+        for (int i = 0; i < messages.Count; i++)
+            QMLog.Info($"bubble[{i}] x={messages[i].X} y={messages[i].Y} " +
+                       $"w={messages[i].Width} h={messages[i].Height} self={messages[i].FromSelf}");
         return messages;
     }
 
@@ -80,27 +76,31 @@ static class BubbleDetector
 
     // ── Pixel analysis ────────────────────────────────────────────────────
     //
-    // WeChat light theme:
-    //   Background : #EDEDED rgb(237,237,237)
-    //   Received   : #FFFFFF rgb(255,255,255)  white
-    //   Sent       : #95EC69 rgb(149,236,105)  WeChat green
-    //
-    // Layout exclusion zones (skip WeChat chrome):
-    //   Top    12 % — title bar + chat header
-    //   Bottom 14 % — message input box
-    //   Left   22 % — sidebar + contact list
-    //
-    // Row classification:
-    //   Count white+green pixels in the chat-area x-range.
-    //   If ≥ BUBBLE_FILL_RATIO of that range → bubble row.
-    //   (Total-count approach tolerates black text inside bubbles.)
-    //
-    // Band grouping:
-    //   Small vertical gaps (≤ GAP_ROWS physical rows) are bridged so that
-    //   multi-line bubbles aren't split at the text lines.
+    // Mirrors the macOS detector:
+    //   1. Crop away WeChat chrome (sidebar/header/input).
+    //   2. Estimate the chat background colour by histogram mode.
+    //   3. Mark pixels that differ from the background.
+    //   4. Group rows with non-background pixels into vertical bands.
+    //   5. Resolve each band to the widest horizontal run, which is normally
+    //      the message bubble rather than the avatar/timestamp.
 
-    const double BUBBLE_FILL_RATIO = 0.35;   // ≥35 % of row must be bubble color
-    const int    GAP_ROWS          = 6;       // bridge gaps shorter than this
+    const double SidebarWidthDip = 360;
+    const double HeaderHeightDip = 58;
+    const double InputHeightDip  = 130;
+    const double RightMarginDip  = 18;
+    const double EdgeMarginDip   = 4;
+
+    const int BubbleBGThreshold      = 24;
+    const int NeutralBubbleMinDelta  = 9;
+    const int NeutralBubbleMaxDelta  = 42;
+    const int NeutralBubbleMaxSpread = 6;
+    const int BubbleGapClosePx       = 8;
+    const int BubbleMinHpx           = 24;
+    const int BubbleMinWpx           = 36;
+    const double MaxBubbleWidthRatio = 0.72;
+    const double CenterRatioThreshold = 0.08;
+    const double MaxCenterWidthRatio  = 0.40;
+    const int SentGreenDelta         = 6;
 
     static List<Message> AnalyzeBitmap(
         Bitmap bmp, int physWX, int physWY, double scale, int limit)
@@ -115,142 +115,321 @@ static class BubbleDetector
         Marshal.Copy(bmpData.Scan0, px, 0, px.Length);
         bmp.UnlockBits(bmpData);
 
-        // Exclusion zones in physical pixels
-        int yTop    = (int)(H * 0.12);   // skip title bar + chat header
-        int yBot    = (int)(H * 0.86);   // skip input box
-        int x0      = (int)(W * 0.22);   // skip sidebar + contact list
-        int x1      = W - 4;
-        int chatW   = x1 - x0;
+        int cropLeft   = (int)(SidebarWidthDip * scale);
+        int cropRight  = (int)(W - RightMarginDip * scale);
+        int cropTop    = (int)((HeaderHeightDip + EdgeMarginDip) * scale);
+        int cropBottom = (int)(H - (InputHeightDip + EdgeMarginDip) * scale);
 
-        int minBubbleH = (int)(8 * scale);   // min band height in physical px
+        if (cropRight <= cropLeft || cropBottom <= cropTop)
+            return new List<Message>();
 
-        // ── Step 1: classify each row ─────────────────────────────────────
-        // isBubble[y], and track leftmost / rightmost bubble pixel per row
-        var isBubble = new bool[H];
-        var rowLeft  = new int[H];
-        var rowRight = new int[H];
-        var rowGreen = new bool[H];
+        int cropW = cropRight - cropLeft;
+        int cropH = cropBottom - cropTop;
+        QMLog.Info($"crop: x={cropLeft} y={cropTop} {cropW}x{cropH}");
 
-        for (int y = yTop; y < yBot; y++)
-        {
-            int baseOff = y * stride;
-            int white = 0, green = 0;
-            int firstX = x1, lastX = x0;
-            bool hasGreen = false;
+        var (bgR, bgG, bgB, sampled) = EstimateBackground(px, stride, cropLeft, cropTop, cropW, cropH);
+        QMLog.Info($"bg estimate rgb=({bgR},{bgG},{bgB}) sampled={sampled}");
 
-            for (int x = x0; x < x1; x++)
+        var mask = BuildMask(px, stride, cropLeft, cropTop, cropW, cropH, bgR, bgG, bgB);
+        ScrubEdgeColumns(mask, cropW, cropH);
+
+        var bands = FindVerticalBands(mask, cropW, cropH);
+        QMLog.Info($"found {bands.Count} vertical bands");
+
+        var bubbles = ResolveBubbles(px, stride, mask, cropLeft, cropTop, cropW, cropH, bands);
+        QMLog.Info($"after filtering: {bubbles.Count} bubbles");
+
+        var newest = bubbles
+            .OrderByDescending(b => b.Bottom)
+            .Take(limit)
+            .Select(b =>
             {
-                int i = baseOff + x * 4;
-                byte b = px[i], g = px[i + 1], r = px[i + 2];
+                int lx = (int)((physWX + cropLeft + b.Left) / scale);
+                int ly = (int)((physWY + cropTop + b.Top) / scale);
+                int lw = Math.Max(1, (int)((b.Right - b.Left + 1) / scale));
+                int lh = Math.Max(1, (int)((b.Bottom - b.Top + 1) / scale));
+                return new Message(lx, ly, lw, lh, FromSelf: b.FromSelf);
+            })
+            .ToList();
 
-                bool isWhite = r >= 248 && g >= 248 && b >= 248;
-                // WeChat green: R 128-178, G 215-255, B 78-135
-                bool isGreen = r >= 128 && r <= 178 &&
-                               g >= 215 &&
-                               b >= 78  && b <= 135;
+        return newest;
+    }
 
-                if (isWhite || isGreen)
+    record struct Bubble(int Left, int Right, int Top, int Bottom, bool FromSelf);
+
+    static (int R, int G, int B, int Sampled) EstimateBackground(
+        byte[] px, int stride, int cropLeft, int cropTop, int cropW, int cropH)
+    {
+        var histR = new int[256];
+        var histG = new int[256];
+        var histB = new int[256];
+
+        int total = cropW * cropH;
+        int step = Math.Max(1, total / 50_000);
+        int sampled = 0;
+
+        for (int idx = 0; idx < total; idx += step)
+        {
+            int cy = idx / cropW;
+            int cx = idx % cropW;
+            int off = (cropTop + cy) * stride + (cropLeft + cx) * 4;
+            byte b = px[off], g = px[off + 1], r = px[off + 2];
+            histR[r]++;
+            histG[g]++;
+            histB[b]++;
+            sampled++;
+        }
+
+        return (ArgMax(histR), ArgMax(histG), ArgMax(histB), sampled);
+    }
+
+    static bool[] BuildMask(
+        byte[] px, int stride, int cropLeft, int cropTop, int cropW, int cropH,
+        int bgR, int bgG, int bgB)
+    {
+        var mask = new bool[cropW * cropH];
+        for (int cy = 0; cy < cropH; cy++)
+        {
+            int rowOff = (cropTop + cy) * stride + cropLeft * 4;
+            for (int cx = 0; cx < cropW; cx++)
+            {
+                int off = rowOff + cx * 4;
+                byte b = px[off], g = px[off + 1], r = px[off + 2];
+                int delta = Math.Abs(r - bgR) + Math.Abs(g - bgG) + Math.Abs(b - bgB);
+                mask[cy * cropW + cx] =
+                    delta > BubbleBGThreshold ||
+                    LooksLikeNeutralBubbleFill(r, g, b, bgR, bgG, bgB, delta);
+            }
+        }
+        return mask;
+    }
+
+    static bool LooksLikeNeutralBubbleFill(
+        byte r, byte g, byte b,
+        int bgR, int bgG, int bgB,
+        int delta)
+    {
+        int max = Math.Max(r, Math.Max(g, b));
+        int min = Math.Min(r, Math.Min(g, b));
+        if (max - min > NeutralBubbleMaxSpread)
+            return false;
+
+        if (max < 232)
+            return false;
+
+        // Windows WeChat can render the chat background as rgb(250,250,250)
+        // and received bubbles as very light grey/white, so the total RGB
+        // delta can be below the generic threshold.  Restrict this path to
+        // low-saturation near-background fills to avoid swallowing text/icons.
+        if (delta < NeutralBubbleMinDelta || delta > NeutralBubbleMaxDelta)
+            return false;
+
+        int bgAvg = (bgR + bgG + bgB) / 3;
+        int avg = (r + g + b) / 3;
+        return Math.Abs(avg - bgAvg) >= 3;
+    }
+
+    static void ScrubEdgeColumns(bool[] mask, int cropW, int cropH)
+    {
+        int edgeMargin = Math.Min(20, cropW / 40);
+        for (int x = 0; x < edgeMargin; x++) ScrubColumn(mask, cropW, cropH, x);
+        for (int x = Math.Max(0, cropW - edgeMargin); x < cropW; x++) ScrubColumn(mask, cropW, cropH, x);
+    }
+
+    static void ScrubColumn(bool[] mask, int cropW, int cropH, int x)
+    {
+        int hits = 0;
+        for (int y = 0; y < cropH; y++)
+            if (mask[y * cropW + x]) hits++;
+
+        if ((double)hits / Math.Max(1, cropH) <= 0.08)
+            return;
+
+        for (int y = 0; y < cropH; y++)
+            mask[y * cropW + x] = false;
+    }
+
+    static List<(int Top, int Bottom)> FindVerticalBands(bool[] mask, int cropW, int cropH)
+    {
+        var rowHas = new bool[cropH];
+        for (int y = 0; y < cropH; y++)
+        {
+            int baseIdx = y * cropW;
+            for (int x = 0; x < cropW; x++)
+            {
+                if (!mask[baseIdx + x]) continue;
+                rowHas[y] = true;
+                break;
+            }
+        }
+
+        var bands = new List<(int Top, int Bottom)>();
+        int i = 0;
+        while (i < cropH)
+        {
+            if (!rowHas[i]) { i++; continue; }
+
+            int start = i;
+            int end = i;
+            int gap = 0;
+            while (i < cropH)
+            {
+                if (rowHas[i])
                 {
-                    white += isWhite ? 1 : 0;
-                    green += isGreen ? 1 : 0;
-                    if (x < firstX) firstX = x;
-                    if (x > lastX)  lastX  = x;
-                    if (isGreen)    hasGreen = true;
+                    end = i;
+                    gap = 0;
                 }
-            }
-
-            double fill = (double)(white + green) / chatW;
-            if (fill >= BUBBLE_FILL_RATIO)
-            {
-                isBubble[y] = true;
-                rowLeft[y]  = firstX;
-                rowRight[y] = lastX;
-                rowGreen[y] = green > white / 2;   // majority green → sent
-            }
-        }
-
-        // ── Step 2: bridge small gaps ─────────────────────────────────────
-        for (int y = yTop + 1; y < yBot - 1; y++)
-        {
-            if (isBubble[y]) continue;
-            // Count consecutive non-bubble rows
-            int gapEnd = y;
-            while (gapEnd < yBot && !isBubble[gapEnd]) gapEnd++;
-            int gapLen = gapEnd - y;
-            // Bridge if the gap is small and neighbours are both bubble rows
-            if (gapLen <= GAP_ROWS && y > yTop && gapEnd < yBot &&
-                isBubble[y - 1] && isBubble[gapEnd])
-            {
-                for (int gy = y; gy < gapEnd; gy++)
+                else
                 {
-                    isBubble[gy] = true;
-                    rowLeft[gy]  = rowLeft[y - 1];
-                    rowRight[gy] = rowRight[y - 1];
-                    rowGreen[gy] = rowGreen[y - 1];
+                    gap++;
+                    if (gap > BubbleGapClosePx) break;
                 }
+                i++;
             }
-            y = gapEnd - 1;
+            bands.Add((start, end));
         }
+        return bands;
+    }
 
-        // ── Step 3: group rows into bubble bands ──────────────────────────
-        var allBands = new List<(int top, int bot, int left, int right, bool isGreen)>();
-        int bandTop = -1, bandL = int.MaxValue, bandR = 0;
-        bool bandGreen = false;
+    static List<Bubble> ResolveBubbles(
+        byte[] px, int stride, bool[] mask,
+        int cropLeft, int cropTop, int cropW, int cropH,
+        List<(int Top, int Bottom)> bands)
+    {
+        var result = new List<Bubble>();
+        int chatCenterX = cropW / 2;
 
-        for (int y = yTop; y <= yBot; y++)
+        foreach (var (top, bottom) in bands)
         {
-            bool inBubble = y < yBot && isBubble[y];
-            if (inBubble)
-            {
-                if (bandTop < 0) { bandTop = y; bandGreen = rowGreen[y]; }
-                bandL = Math.Min(bandL, rowLeft[y]);
-                bandR = Math.Max(bandR, rowRight[y]);
-            }
-            else if (bandTop >= 0)
-            {
-                int bh = y - bandTop;
-                if (bh >= minBubbleH)
-                    allBands.Add((bandTop, y - 1, bandL, bandR, bandGreen));
-                bandTop = -1; bandL = int.MaxValue; bandR = 0;
-            }
-        }
+            int bandH = bottom - top + 1;
+            if (bandH < BubbleMinHpx) continue;
 
-        // ── Step 4: take bottom `limit` bands → logical Message records ───
-        int skip = Math.Max(0, allBands.Count - limit);
-        var result = new List<Message>();
-        for (int i = skip; i < allBands.Count; i++)
-        {
-            var (top, bot, left, right, isGreen) = allBands[i];
-            int lx = (int)((physWX + left)  / scale);
-            int ly = (int)((physWY + top)   / scale);
-            int lw = (int)((right - left)   / scale);
-            int lh = (int)((bot - top + 1)  / scale);
-            result.Add(new Message(lx, ly, lw, lh, FromSelf: isGreen));
+            var (width, left, right) = BestBubbleRunInBand(mask, cropW, top, bottom);
+            if (width < BubbleMinWpx) continue;
+
+            int midX = (left + right) / 2;
+            if (Math.Abs(midX - chatCenterX) < cropW * CenterRatioThreshold &&
+                width < cropW * MaxCenterWidthRatio)
+                continue;
+
+            var (r, g, b) = MedianPatch(px, stride, cropLeft, cropTop, cropW, cropH, left, right, top, bottom);
+            bool isGreen = g > r + SentGreenDelta && g > b + SentGreenDelta;
+            bool posRight = left > cropW * 0.45 && cropW - 1 - right < left;
+            bool fromSelf = isGreen || posRight;
+
+            result.Add(new Bubble(left, right, top, bottom, fromSelf));
         }
-        result.Reverse();   // newest (bottom of chat) → index 0 = A
         return result;
     }
 
-    // ── Stub fallback ─────────────────────────────────────────────────────
-
-    static List<Message> StubMessages(
-        double wx, double wy, double ww, double wh, int limit)
+    static bool LooksLikeLeftAvatarRun(int width, int left, int cropW)
     {
-        var result = new List<Message>();
-        int chatX  = (int)(wx + ww * 0.30);
-        int chatW  = (int)(ww * 0.65);
-        int startY = (int)(wy + wh * 0.15);
-        int gap    = (int)(wh * 0.65 / limit);
-        for (int i = 0; i < limit; i++)
+        // A received-message avatar lives at the far left of the chat crop and
+        // is roughly square. If a white bubble is partially missed, the avatar
+        // can otherwise become the "widest run" and put the label on the avatar.
+        return left < Math.Min(150, cropW * 0.10) && width <= 150;
+    }
+
+    static int ArgMax(int[] hist)
+    {
+        int best = 0, bestIdx = 0;
+        for (int i = 0; i < hist.Length; i++)
         {
-            bool fromSelf = i % 3 == 1;
-            int bw = (int)(chatW * (0.35 + (i % 3) * 0.12));
-            int bh = 36;
-            int bx = fromSelf ? chatX + chatW - bw - 40 : chatX + 40;
-            int by = startY + i * gap;
-            result.Add(new Message(bx, by, bw, bh, FromSelf: fromSelf));
+            if (hist[i] <= best) continue;
+            best = hist[i];
+            bestIdx = i;
         }
-        result.Reverse();
-        return result;
+        return bestIdx;
+    }
+
+    static (int Width, int Left, int Right) BestBubbleRunInBand(
+        bool[] mask,
+        int cropW,
+        int top,
+        int bottom)
+    {
+        var best = (Width: 0, Left: 0, Right: 0);
+
+        for (int y = top; y <= bottom; y++)
+        {
+            foreach (var run in HorizontalRuns(mask, cropW, y))
+            {
+                if (run.Width < BubbleMinWpx)
+                    continue;
+                if (run.Width > cropW * MaxBubbleWidthRatio)
+                    continue;
+                if (LooksLikeLeftAvatarRun(run.Width, run.Left, cropW))
+                    continue;
+                if (run.Width > best.Width)
+                    best = run;
+            }
+        }
+
+        return best;
+    }
+
+    static List<(int Width, int Left, int Right)> HorizontalRuns(bool[] mask, int cropW, int y)
+    {
+        var runs = new List<(int Width, int Left, int Right)>();
+        int baseIdx = y * cropW;
+        int curStart = -1, curEnd = -1;
+        for (int x = 0; x < cropW; x++)
+        {
+            if (mask[baseIdx + x])
+            {
+                if (curStart < 0) curStart = x;
+                curEnd = x;
+                continue;
+            }
+
+            if (curStart < 0) continue;
+            int width = curEnd - curStart + 1;
+            runs.Add((width, curStart, curEnd));
+            curStart = -1;
+        }
+
+        if (curStart >= 0)
+        {
+            int width = curEnd - curStart + 1;
+            runs.Add((width, curStart, curEnd));
+        }
+
+        return runs;
+    }
+
+    static (int R, int G, int B) MedianPatch(
+        byte[] px, int stride,
+        int cropLeft, int cropTop, int cropW, int cropH,
+        int left, int right, int top, int bottom)
+    {
+        int cx = (left + right) / 2;
+        int cy = (top + bottom) / 2;
+        int x0 = Math.Max(0, cx - 2), x1 = Math.Min(cropW, cx + 3);
+        int y0 = Math.Max(0, cy - 2), y1 = Math.Min(cropH, cy + 3);
+
+        var rs = new List<int>();
+        var gs = new List<int>();
+        var bs = new List<int>();
+
+        for (int y = y0; y < y1; y++)
+        {
+            int rowOff = (cropTop + y) * stride + cropLeft * 4;
+            for (int x = x0; x < x1; x++)
+            {
+                int off = rowOff + x * 4;
+                bs.Add(px[off]);
+                gs.Add(px[off + 1]);
+                rs.Add(px[off + 2]);
+            }
+        }
+
+        return (Median(rs), Median(gs), Median(bs));
+    }
+
+    static int Median(List<int> values)
+    {
+        if (values.Count == 0) return 0;
+        values.Sort();
+        return values[values.Count / 2];
     }
 }

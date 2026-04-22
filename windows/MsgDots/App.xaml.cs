@@ -4,6 +4,8 @@ namespace MsgDots;
 
 public partial class App : Application
 {
+    private const int MaxOverlayMessages = 26;
+
     private AppTray?      _tray;
     private HotkeyManager? _hotkey;
 
@@ -55,7 +57,7 @@ public partial class App : Application
         List<Message> messages;
         try
         {
-            messages = BubbleDetector.DetectRecentMessages(limit: 8);
+            messages = BubbleDetector.DetectRecentMessages(limit: MaxOverlayMessages);
         }
         catch (Exception ex)
         {

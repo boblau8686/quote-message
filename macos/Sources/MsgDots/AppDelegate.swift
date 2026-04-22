@@ -11,7 +11,7 @@
 //    ✅ Status item with red circle + white Q
 //    ✅ NSEvent-based global hotkey monitor (main-thread, no TSM trap)
 //    ✅ Permission self-check panel (auto-opens on launch if missing)
-//    ⬜ Overlay with A–H labels next to each visible message
+//    ⬜ Overlay with letter labels next to each visible message
 //    ⬜ Bubble detection (CGWindowListCreateImage + pixel analysis)
 //    ⬜ Quote-action driver (AXUIElement → right-click menu → "引用")
 //    ⬜ "Change hotkey…" menu item
