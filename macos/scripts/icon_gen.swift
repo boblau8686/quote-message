@@ -1,7 +1,7 @@
 #!/usr/bin/env swift
 //
 //  icon_gen.swift
-//  Render the EasyQuote app icon at a given pixel size and write a PNG.
+//  Render the MsgDots app icon at a given pixel size and write a PNG.
 //
 //  Usage:  swift scripts/icon_gen.swift <size> <output.png>
 //
@@ -9,8 +9,8 @@
 //    * macOS squircle (rounded-rect, radius = 22.37% of side — Apple's own ratio)
 //    * Red vertical gradient (top #F04C46 → bottom #B7272D)
 //    * Faint white highlight band on the top half (glassy feel)
-//    * Bold white "Q" centered
-//    * Two little white quote marks tucked into the upper-right (呼应"引用")
+//    * Bold white "M" centered
+//    * Two small white dots tucked into the upper-right (echoing message labels)
 //
 //  Pure CoreGraphics — no external deps.  Run via `swift` (interpreter); the
 //  shebang above also makes it invokable as `./icon_gen.swift <size> <out>`.
@@ -86,54 +86,43 @@ ctx.drawLinearGradient(
     options: []
 )
 
-// -------- little quote marks (top-right) ---------------------------------
-// Two filled "teardrops" that read as open-quote glyphs.  Soft-white so they
-// don't fight the big Q.  Sized relative to S for resolution independence.
-func drawQuoteDot(cx: CGFloat, cy: CGFloat, w: CGFloat, h: CGFloat) {
-    // Round blob with a small tail to feel like a quote mark.
-    let r = CGRect(x: cx - w/2, y: cy - h/2, width: w, height: h)
-    let p = CGMutablePath()
-    p.addEllipse(in: r)
-    // small tail angled down-left
-    p.move(to:    CGPoint(x: cx - w*0.15, y: cy - h*0.35))
-    p.addLine(to: CGPoint(x: cx - w*0.55, y: cy - h*0.95))
-    p.addLine(to: CGPoint(x: cx + w*0.10, y: cy - h*0.55))
-    p.closeSubpath()
-    ctx.addPath(p)
+// -------- little message dots (top-right) --------------------------------
+// Two filled circles, sized relative to S for resolution independence.
+func drawMessageDot(cx: CGFloat, cy: CGFloat, d: CGFloat) {
+    let r = CGRect(x: cx - d/2, y: cy - d/2, width: d, height: d)
+    ctx.addEllipse(in: r)
 }
 ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.82))
-let dotW = S * 0.095
-let dotH = S * 0.115
+let dotD = S * 0.10
 let dotY = S * 0.80    // up near the top
-drawQuoteDot(cx: S * 0.68, cy: dotY, w: dotW, h: dotH)
-drawQuoteDot(cx: S * 0.81, cy: dotY, w: dotW, h: dotH)
+drawMessageDot(cx: S * 0.68, cy: dotY, d: dotD)
+drawMessageDot(cx: S * 0.81, cy: dotY, d: dotD)
 ctx.fillPath()
 
-// -------- big white Q (centered) -----------------------------------------
+// -------- big white M (centered) -----------------------------------------
 // Use NSAttributedString so we get proper font metrics and kerning.
 // We draw via an NSGraphicsContext bridge — simplest way to get CoreText-
 // quality text rendering on top of the CGContext.
-let fontSize = S * 0.68
+let fontSize = S * 0.63
 let font = NSFont.systemFont(ofSize: fontSize, weight: .heavy)
 let attrs: [NSAttributedString.Key: Any] = [
     .font: font,
     .foregroundColor: NSColor.white,
     .kern: 0,
 ]
-let q = NSAttributedString(string: "Q", attributes: attrs)
-let qSize = q.size()
+let glyph = NSAttributedString(string: "M", attributes: attrs)
+let glyphSize = glyph.size()
 
-// Nudge down a hair so the Q's tail doesn't look cropped.
-let qOrigin = NSPoint(
-    x: (S - qSize.width) / 2,
-    y: (S - qSize.height) / 2 - S * 0.02
+let glyphOrigin = NSPoint(
+    x: (S - glyphSize.width) / 2,
+    y: (S - glyphSize.height) / 2 - S * 0.01
 )
 
 // Push AppKit drawing onto this CGContext.
 let nsCtx = NSGraphicsContext(cgContext: ctx, flipped: false)
 NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = nsCtx
-q.draw(at: qOrigin)
+glyph.draw(at: glyphOrigin)
 NSGraphicsContext.restoreGraphicsState()
 
 ctx.restoreGState()

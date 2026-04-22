@@ -1,6 +1,6 @@
 //
 //  main.swift
-//  QuoteMessage — 微信快速引用 (Swift port, macOS)
+//  MsgDots — message keyboard actions (Swift port, macOS)
 //
 //  Bootstrap only: create the shared NSApplication, hook up the
 //  AppDelegate, and run the Cocoa event loop.  All real logic lives

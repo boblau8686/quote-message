@@ -1,6 +1,6 @@
 //
 //  AppDelegate.swift
-//  QuoteMessage — top-level wire-up.
+//  MsgDots — top-level wire-up.
 //
 //  This is intentionally small.  Its only jobs are:
 //    1. Install the menu-bar status item (the red Q icon + menu).
@@ -21,12 +21,12 @@ import Cocoa
 import os
 
 /// Diagnostic log that writes to BOTH unified logging and a file under
-/// /tmp/quotemessage.log.  Apple's unified logging silently filters NSLog
+/// /tmp/msgdots.log.  Apple's unified logging silently filters NSLog
 /// output from Swift apps in many cases, so having a guaranteed-to-work
 /// side channel makes debugging packaged builds tractable.
 enum QMLog {
-    private static let logger = Logger(subsystem: "com.quotemessage.app", category: "main")
-    private static let filePath = "/tmp/quotemessage.log"
+    private static let logger = Logger(subsystem: "com.msgdots.app", category: "main")
+    private static let filePath = "/tmp/msgdots.log"
 
     static func info(_ message: String) {
         logger.info("\(message, privacy: .public)")
@@ -111,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         if let button = statusItem.button {
             button.image = Self.makeStatusIcon()
-            button.toolTip = "QuoteMessage — 微信快速引用"
+            button.toolTip = "MsgDots — 消息快捷操作"
         }
 
         let menu = NSMenu()
@@ -145,7 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
 
         let aboutItem = NSMenuItem(
-            title: "关于 QuoteMessage",
+            title: "关于 MsgDots",
             action: #selector(showAbout),
             keyEquivalent: ""
         )
@@ -163,7 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = menu
     }
 
-    /// Render a red circle + white "Q" glyph at 2× for Retina menu bars.
+    /// Render a red circle + white "M" glyph at 2× for Retina menu bars.
     private static func makeStatusIcon() -> NSImage {
         // macOS status-bar icons are expected to be 22 pt tall at 1×.
         // We draw at the point size and let the system handle backing
@@ -178,17 +178,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSColor(srgbRed: 0xE5/255.0, green: 0x39/255.0, blue: 0x35/255.0, alpha: 1).setFill()
         circle.fill()
 
-        let q = NSAttributedString(
-            string: "Q",
+        let glyph = NSAttributedString(
+            string: "M",
             attributes: [
                 .font: NSFont.boldSystemFont(ofSize: 12),
                 .foregroundColor: NSColor.white,
             ]
         )
-        let qSize = q.size()
-        q.draw(at: NSPoint(
-            x: (size.width - qSize.width) / 2,
-            y: (size.height - qSize.height) / 2
+        let glyphSize = glyph.size()
+        glyph.draw(at: NSPoint(
+            x: (size.width - glyphSize.width) / 2,
+            y: (size.height - glyphSize.height) / 2
         ))
 
         image.unlockFocus()
@@ -307,7 +307,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func hotkeyHintText() -> String {
-        "按 \(HotkeyConfig.current.display) 触发快速引用"
+        "按 \(HotkeyConfig.current.display) 触发消息操作"
     }
 
     private func changeHotkeyMenuTitle() -> String {
@@ -318,10 +318,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showAbout() {
         let alert = NSAlert()
-        alert.messageText = "QuoteMessage"
+        alert.messageText = "MsgDots"
         alert.informativeText =
-            "微信快速引用辅助（Swift 原生版）\n\n" +
-            "按 \(HotkeyConfig.current.display) 在微信输入框中触发。"
+            "消息快捷操作辅助（Swift 原生版）\n\n" +
+            "按 \(HotkeyConfig.current.display) 在聊天输入框中触发。"
         alert.alertStyle = .informational
         alert.runModal()
     }

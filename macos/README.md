@@ -1,35 +1,30 @@
-# EasyQuote — Swift 重写版（macOS）
+# MsgDots — macOS 原生版
 
-把 Python + PyQt 版（仓库根目录 `../`）迁移到 Swift + AppKit，
-目标是把打包体积从 ~100 MB 降到 ~3 MB，并用原生 API 替换所有 PyObjC 胶水层。
-
-Python 版会作为 PoC 一直保留在 `master` 分支上，作参考实现用。
+MsgDots 的 Swift + AppKit 实现，用键盘在 IM 聊天窗口中操作消息气泡。
 
 ## 当前进度
 
 | 模块 | 状态 |
 |---|---|
 | SPM 项目骨架 + `build.sh` 打 `.app` | ✅ |
-| 菜单栏 Q 图标 + 菜单 | ✅ |
-| `NSEvent` 全局快捷键监听（Ctrl+Q 打日志） | ✅ |
-| 权限自查面板（输入监控/辅助功能/屏幕录制） | ⬜ |
-| 修改快捷键 UI | ⬜ |
-| 气泡识别（`CGWindowListCreateImage` + 像素分析） | ⬜ |
-| 字母叠层（`NSPanel` 透明置顶） | ⬜ |
-| 引用动作（`AXUIElement` + 合成右键点击） | ⬜ |
-| 引用后输入法回焦（`NSAppleScript` 调用） | ⬜ |
+| 菜单栏 M 图标 + 菜单 | ✅ |
+| `NSEvent` 全局快捷键监听 | ✅ |
+| 权限自查面板（输入监控/辅助功能/屏幕录制） | ✅ |
+| 修改快捷键 UI | ✅ |
+| 气泡识别（`CGWindowListCreateImage` + 像素分析） | ✅ |
+| 红色字母点叠层（`NSPanel` 透明置顶） | ✅ |
+| 引用动作（合成右键点击 → 点击菜单项） | ✅ |
 
 ## 构建
 
 ```bash
-cd swift-macos
+cd macos
 ./build.sh              # 通用二进制（arm64 + x86_64），release 配置
 ./build.sh --arm64      # 只为 Apple Silicon 编译，速度快
 ./build.sh --debug      # 调试版（带断言、符号）
 ```
 
-产物在 `dist/EasyQuote.app`，直接双击即可运行（第一次可能要在"系统设置 →
-安全性 → 输入监控"里手动加一下）。
+产物在 `dist/MsgDots.app`，直接双击即可运行。首次运行需要授权输入监控、辅助功能和屏幕录制。
 
 ## 直接跑源码（不打包）
 
@@ -45,16 +40,13 @@ swift run -c release
 ## 项目结构
 
 ```
-swift-macos/
+macos/
 ├── Package.swift              # SPM 配置，macOS 12+，单一可执行目标
-├── Sources/EasyQuote/
+├── Sources/MsgDots/
 │   ├── main.swift             # 入口：NSApplication.shared.run()
-│   └── AppDelegate.swift      # 状态栏 + 全局键监视器（后续会拆分）
+│   └── AppDelegate.swift      # 状态栏 + 快捷键监听 + 管线调度
 ├── Resources/
 │   └── Info.plist             # .app 的 Info.plist（含 LSUIElement / 隐私串）
 ├── build.sh                   # swift build → 组 .app 包
 └── .gitignore
 ```
-
-后续模块加进来时会拆分成子目录（`Overlay/`、`MessageReader/`、`Action/`、
-`Permissions/` 等），跟 Python 版的布局对应。

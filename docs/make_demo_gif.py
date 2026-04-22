@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate docs/demo.gif — animated colour-block walkthrough of EasyQuote.
+Generate docs/demo.gif — animated colour-block walkthrough of MsgDots.
 
 Usage:  python3 docs/make_demo_gif.py
 Needs:  Pillow, ffmpeg
@@ -304,7 +304,7 @@ for i in range(sec(2.0)):
     add(frame(cursor_vis=(i % 8 < 4)))
 
 # ── Step 2 caption: 按快捷键 ───────────────────────────────
-cap = "按 ⌃Q 触发快速引用"
+cap = "按 ⌃Q 触发消息操作"
 for _ in range(sec(1.5)):
     add(frame(caption=cap))
 

@@ -102,7 +102,7 @@ private struct PermissionsView: View {
             }
 
             HStack {
-                Text("授权后需要重启 QuoteMessage 才能生效")
+                Text("授权后需要重启 MsgDots 才能生效")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
@@ -136,7 +136,7 @@ final class PermissionsWindowController: NSWindowController, NSWindowDelegate {
         hosting.view.frame = NSRect(x: 0, y: 0, width: 560, height: 300)
 
         let window = NSWindow(contentViewController: hosting)
-        window.title = "权限检查 — QuoteMessage"
+        window.title = "权限检查 — MsgDots"
         window.styleMask = [.titled, .closable]
         window.level = .floating            // stay above System Settings
         window.isReleasedWhenClosed = false // reopening must still work

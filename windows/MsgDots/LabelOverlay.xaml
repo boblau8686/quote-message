@@ -1,0 +1,20 @@
+<Window x:Class="MsgDots.LabelOverlay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        WindowState="Maximized"
+        Left="0" Top="0"
+        Focusable="False">
+    <!--
+        Canvas coordinates match WPF logical pixels (DIPs).
+        BubbleDetector converts physical px → DIPs before returning,
+        so circles land exactly over the WeChat bubbles.
+    -->
+    <Canvas x:Name="Canvas"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch" />
+</Window>

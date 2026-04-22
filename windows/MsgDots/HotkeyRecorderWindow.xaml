@@ -1,0 +1,32 @@
+<Window x:Class="MsgDots.HotkeyRecorderWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="修改快捷键 — MsgDots"
+        Width="320" Height="160"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <StackPanel Margin="24" VerticalAlignment="Center">
+
+        <TextBlock Text="请按下新的快捷键组合："
+                   Margin="0,0,0,12" />
+
+        <Border Background="#F5F5F5" BorderBrush="#CCCCCC" BorderThickness="1"
+                CornerRadius="4" Padding="10,8" Margin="0,0,0,16">
+            <TextBlock x:Name="PreviewText"
+                       Text="&#x2014;"
+                       FontSize="16" FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+        </Border>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="CancelBtn" Content="取消"
+                    Width="72" Margin="0,0,8,0"
+                    Click="CancelBtn_Click" />
+            <Button x:Name="ApplyBtn" Content="确定"
+                    Width="72" IsDefault="True" IsEnabled="False"
+                    Click="ApplyBtn_Click" />
+        </StackPanel>
+
+    </StackPanel>
+</Window>

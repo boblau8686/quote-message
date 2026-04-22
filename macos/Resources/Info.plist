@@ -4,11 +4,11 @@
 <dict>
     <!-- Basic identity -->
     <key>CFBundleName</key>
-    <string>QuoteMessage</string>
+    <string>MsgDots</string>
     <key>CFBundleDisplayName</key>
-    <string>快速引用消息</string>
+    <string>MsgDots</string>
     <key>CFBundleIdentifier</key>
-    <string>com.quotemessage.app</string>
+    <string>com.msgdots.app</string>
     <key>CFBundleVersion</key>
     <string>0.1.0</string>
     <key>CFBundleShortVersionString</key>
@@ -16,7 +16,7 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
-    <string>QuoteMessage</string>
+    <string>MsgDots</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
 
@@ -35,9 +35,9 @@
     <true/>
 
     <key>NSAccessibilityUsageDescription</key>
-    <string>用于识别聊天消息气泡位置并触发"引用"菜单项。</string>
+    <string>用于识别聊天消息气泡位置并触发对应的菜单操作。</string>
 
     <key>NSAppleEventsUsageDescription</key>
-    <string>用于在引用完成后重新激活聊天应用，使输入法能够正常使用。</string>
+    <string>用于在操作完成后重新激活聊天应用，使输入法能够正常使用。</string>
 </dict>
 </plist>

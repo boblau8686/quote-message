@@ -1,8 +1,8 @@
-# QuoteMessage — IM 消息快速引用
+# MsgDots — IM 消息键盘操作器
 
-在 IM 软件中快速引用消息的键盘辅助工具：**按下快捷键 → 屏幕上给最近几条消息标上字母 → 按对应字母键 → 自动完成"引用"动作**。
+在 IM 软件中用键盘操作消息气泡的辅助工具：**按下快捷键 → 屏幕上给最近几条消息标上红色字母点 → 按对应字母键 → 自动完成引用等消息操作**。
 
-不用鼠标、不用切换窗口、不用进右键菜单翻找，适合在群里快速接话。
+不用鼠标、不用切换窗口、不用进右键菜单翻找，适合在群里快速接话，也为撤回、放大图片等更多动作预留空间。
 
 **平台支持**
 
@@ -28,12 +28,12 @@
 
 微信 Mac 版引用一条消息的标准操作是：把鼠标移到气泡上 → 右键 → 在弹出菜单里找"引用"→ 再点一下。消息一多、或者用外接键盘时，来回操作鼠标很打断节奏。
 
-QuoteMessage 把这一连串动作压缩成两次按键：
+MsgDots 把这一连串动作压缩成两次按键：
 
 1. `Ctrl+Q`（可改）触发
 2. `A / B / C / …` 选中要引用的那一条
 
-全程键盘完成，引用完成后微信输入框直接可以继续输入中文，没有焦点抖动。
+全程键盘完成，操作完成后微信输入框直接可以继续输入中文，没有焦点抖动。
 
 ---
 
@@ -41,7 +41,7 @@ QuoteMessage 把这一连串动作压缩成两次按键：
 
 - **键盘优先**：默认快捷键 `⌃Q`，菜单里"更改快捷键…"一键录制任意组合（至少一个 ⌃/⌥/⇧/⌘ 修饰键）
 - **自动识别消息气泡**：截图 + 像素分析定位聊天窗口里每条气泡的位置，不读取聊天内容，不依赖微信版本内部 API
-- **字母叠层**：全屏透明 overlay 在每条消息旁画红色圆圈 + 字母（A–H），点击穿透不打扰任何操作
+- **红色字母点**：全屏透明 overlay 在每条消息旁画红色圆圈 + 字母（A–H），点击穿透不打扰任何操作
 - **权限自查面板**：启动时如果缺权限自动弹窗，点对应按钮直接跳转系统设置
 - **Universal Binary**：一个 `.app` 同时支持 Apple Silicon 和 Intel，体积约 650 KB
 
@@ -51,9 +51,9 @@ QuoteMessage 把这一连串动作压缩成两次按键：
 
 ### 方式一：下载 DMG（推荐）
 
-1. 到 [Releases](../../releases) 下载最新的 `QuoteMessage-x.y.z.dmg`
-2. 双击打开 → 把 `QuoteMessage.app` 拖到 `Applications`
-3. 首次启动如果 Gatekeeper 挡住，右键 `QuoteMessage.app` → 打开 → 允许
+1. 到 [Releases](../../releases) 下载最新的 `MsgDots-x.y.z.dmg`
+2. 双击打开 → 把 `MsgDots.app` 拖到 `Applications`
+3. 首次启动如果 Gatekeeper 挡住，右键 `MsgDots.app` → 打开 → 允许
 4. 按照弹出的权限面板逐项授权（见下文"权限"段）
 
 DMG 大约 **200 KB**，.app 本体 **650 KB**。
@@ -63,8 +63,8 @@ DMG 大约 **200 KB**，.app 本体 **650 KB**。
 需要 Xcode 15+（或命令行工具里的 Swift 5.9+）：
 
 ```bash
-git clone https://github.com/boblau8686/quote-message.git
-cd quote-message/macos
+git clone https://github.com/boblau8686/msg-dots.git
+cd msg-dots/macos
 
 # Universal (arm64 + x86_64) — 默认，产出一个通吃 Intel 和 Apple Silicon 的 .app
 ./build.sh
@@ -77,8 +77,8 @@ cd quote-message/macos
 ```
 
 产物：
-- `macos/dist/QuoteMessage.app`
-- `macos/dist/QuoteMessage-<版本>.dmg`
+- `macos/dist/MsgDots.app`
+- `macos/dist/MsgDots-<版本>.dmg`
 
 不需要 Intel Mac 也能打 x86_64 版本 —— Apple Silicon 上的 Swift 工具链自带两个架构的编译目标。
 
@@ -96,9 +96,9 @@ cd quote-message/macos
 
 > **未签名 app 的小坑**：自己 `./build.sh` 重新编译后，macOS 认为这是"不同的 app"，之前授权的三项都会失效。在系统设置里删了重加有时也不管用——最可靠的方法是用命令行彻底重置：
 > ```bash
-> tccutil reset All com.quotemessage.app
+> tccutil reset All com.msgdots.app
 > ```
-> 执行后重新启动 QuoteMessage，权限面板会再次弹出，逐项授权即可。官方 Release 版以后会走 Apple Developer ID 签名，就没这个问题了。
+> 执行后重新启动 MsgDots，权限面板会再次弹出，逐项授权即可。官方 Release 版以后会走 Apple Developer ID 签名，就没这个问题了。
 
 ---
 
@@ -110,7 +110,7 @@ cd quote-message/macos
 4. 按对应字母键 → 自动触发"引用"
 5. 按 `Esc` 随时取消
 
-想改快捷键：菜单栏红色 `Q` 图标 → "更改快捷键…"→"录制"→按下你想用的组合 → 保存。
+想改快捷键：菜单栏红色 `M` 图标 → "更改快捷键…"→"录制"→按下你想用的组合 → 保存。
 
 ---
 
@@ -124,16 +124,16 @@ cd quote-message/macos
 - **右键 + 菜单点击**：`CGEvent.post(tap: .cgSessionEventTap)`（Session tap 而不是 HID tap — 前者在 IMS 之上，不会打断中文输入法状态）
 - **菜单坐标定位**：通过 `CGWindowListCopyWindowInfo` 轮询新弹出的小窗口，用几何位置点击倒数第二项（"引用"）
 - **权限探测**：`IOHIDCheckAccess` / `AXIsProcessTrusted` / `CGPreflightScreenCaptureAccess`，全部非打扰式（不会弹授权框）
-- **日志**：`os.Logger`（统一日志）+ `/tmp/quotemessage.log`（兜底文件），打包版也能查
+- **日志**：`os.Logger`（统一日志）+ `/tmp/msgdots.log`（兜底文件），打包版也能查
 - **持久化**：`UserDefaults` 存自定义快捷键
 
 ### 目录结构
 
 ```
-quote-message/
+msg-dots/
 ├── macos/                              ← macOS 原生版（Swift）
 │   ├── Package.swift
-│   ├── Sources/QuoteMessage/
+│   ├── Sources/MsgDots/
 │   │   ├── main.swift                  # NSApplication 入口
 │   │   ├── AppDelegate.swift           # 状态栏 + 快捷键监听 + 管线调度
 │   │   ├── Config.swift                # 全局常量（bundle id、阈值、颜色）
@@ -160,8 +160,8 @@ quote-message/
 ## 常见问题
 
 **按快捷键完全没反应？**
-看 `/tmp/quotemessage.log`：
-- 没有 `hotkey fired` → 输入监控没授权；到系统设置 → 隐私与安全性 → 输入监控里删掉旧 QuoteMessage 条目再重新加
+看 `/tmp/msgdots.log`：
+- 没有 `hotkey fired` → 输入监控没授权；到系统设置 → 隐私与安全性 → 输入监控里删掉旧 MsgDots 条目再重新加
 - 有 `hotkey fired` 但没 `detected N messages` → 辅助功能 / 屏幕录制权限的问题
 - 启动时 `perm: xxx = denied` 会列出哪些没授权
 
@@ -189,8 +189,8 @@ cd macos
 # 开发快速构建
 ./build.sh --arm64 --debug
 
-# 运行（日志同时出到 stderr 和 /tmp/quotemessage.log）
-./dist/QuoteMessage.app/Contents/MacOS/QuoteMessage
+# 运行（日志同时出到 stderr 和 /tmp/msgdots.log）
+./dist/MsgDots.app/Contents/MacOS/MsgDots
 
 # 打 release universal
 ./build.sh
@@ -201,7 +201,7 @@ cd macos
 
 查日志：
 ```bash
-tail -F /tmp/quotemessage.log
+tail -F /tmp/msgdots.log
 ```
 
 ---

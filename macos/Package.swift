@@ -1,6 +1,6 @@
 // swift-tools-version: 5.9
 //
-// Swift Package Manager manifest for QuoteMessage.
+// Swift Package Manager manifest for MsgDots.
 //
 // Why SPM (and not an Xcode project)?
 //   * All config is text-only, so diffs review cleanly in git.
@@ -13,12 +13,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "QuoteMessage",
+    name: "MsgDots",
     platforms: [.macOS(.v12)],
     targets: [
         .executableTarget(
-            name: "QuoteMessage",
-            path: "Sources/QuoteMessage"
+            name: "MsgDots",
+            path: "Sources/MsgDots"
         )
     ]
 )

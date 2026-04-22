@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Build a drag-to-Applications style DMG from dist/QuoteMessage.app.
+# Build a drag-to-Applications style DMG from dist/MsgDots.app.
 #
 # Usage:  ./build-dmg.sh                     # expects ./build.sh to have run
 #         ./build-dmg.sh --build             # run ./build.sh --universal first
 #         ./build-dmg.sh --build --arm64     # arm64-only (faster, dev builds)
 #
-# Output: ./dist/QuoteMessage-<version>.dmg
+# Output: ./dist/MsgDots-<version>.dmg
 #
 # The DMG layout:
 #   ┌───────────────────────────────────────┐
@@ -14,7 +14,7 @@
 #   │   ┌────────┐       ┌──────────────┐   │
 #   │   │        │       │              │   │
 #   │   │   Q    │  →    │ Applications │   │
-#   │   │QuoteMessage│      │              │   │
+#   │   │MsgDots│      │              │   │
 #   │   └────────┘       └──────────────┘   │
 #   └───────────────────────────────────────┘
 #
@@ -40,7 +40,7 @@ if [[ "${1:-}" == "--build" ]]; then
     fi
 fi
 
-APP="${HERE}/dist/QuoteMessage.app"
+APP="${HERE}/dist/MsgDots.app"
 if [[ ! -d "$APP" ]]; then
     echo "error: $APP not found — run ./build.sh first (or pass --build)" >&2
     exit 1
@@ -50,10 +50,10 @@ fi
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
     "${APP}/Contents/Info.plist" 2>/dev/null || echo "0.0.0")
 
-VOLNAME="QuoteMessage"
-STAGING=$(mktemp -d -t quotemessage-dmg)
+VOLNAME="MsgDots"
+STAGING=$(mktemp -d -t msgdots-dmg)
 RW_DMG="${HERE}/dist/.tmp-rw.dmg"
-FINAL_DMG="${HERE}/dist/QuoteMessage-${VERSION}.dmg"
+FINAL_DMG="${HERE}/dist/MsgDots-${VERSION}.dmg"
 
 # Make sure Finder isn't holding the old mount; ignore failures.
 hdiutil detach "/Volumes/${VOLNAME}" -force 2>/dev/null || true
@@ -94,7 +94,7 @@ tell application "Finder"
         set arrangement of viewOptions to not arranged
         set icon size of viewOptions to 96
         set text size of viewOptions to 12
-        set position of item "QuoteMessage.app" of container window to {130, 140}
+        set position of item "MsgDots.app" of container window to {130, 140}
         set position of item "Applications" of container window to {370, 140}
         update without registering applications
         delay 1
@@ -121,4 +121,4 @@ SIZE=$(du -h "$FINAL_DMG" | awk '{print $1}')
 echo ""
 echo "✅ built: $FINAL_DMG  (${SIZE})"
 echo ""
-echo "分发时直接上传这个 .dmg；用户双击后会看到 QuoteMessage 图标 → 拖到 Applications 即可。"
+echo "分发时直接上传这个 .dmg；用户双击后会看到 MsgDots 图标 → 拖到 Applications 即可。"

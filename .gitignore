@@ -14,3 +14,9 @@ docs/_frames/
 # Xcode
 *.xcuserstate
 .idea/
+
+# Visual Studio / .NET
+.vs/
+windows/.vs/
+windows/**/bin/
+windows/**/obj/
