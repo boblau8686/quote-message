@@ -111,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         if let button = statusItem.button {
             button.image = Self.makeStatusIcon()
-            button.toolTip = "MsgDots — 消息快捷操作"
+            button.toolTip = "消息点点 — 消息快捷操作"
         }
 
         let menu = NSMenu()
@@ -145,7 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
 
         let aboutItem = NSMenuItem(
-            title: "关于 MsgDots",
+            title: "关于 消息点点",
             action: #selector(showAbout),
             keyEquivalent: ""
         )
@@ -318,7 +318,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showAbout() {
         let alert = NSAlert()
-        alert.messageText = "MsgDots"
+        alert.messageText = "消息点点"
         alert.informativeText =
             "消息快捷操作辅助（Swift 原生版）\n\n" +
             "按 \(HotkeyConfig.current.display) 在聊天输入框中触发。"

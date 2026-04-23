@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace MsgDots;
 
@@ -9,8 +10,11 @@ namespace MsgDots;
 /// </summary>
 partial class HotkeyRecorderWindow : Window
 {
+    [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vKey);
+
     private HotkeyDef? _pending;
     private readonly KeyboardHook _hook;
+    private const string RequireModifierText = "必须至少包含 Ctrl / Alt / Shift 之一";
 
     public HotkeyRecorderWindow()
     {
@@ -38,14 +42,27 @@ partial class HotkeyRecorderWindow : Window
             return true;
         }
 
-        // Snapshot modifier state at the moment the key fires
+        // Snapshot modifier state directly from Win32. In a low-level
+        // keyboard hook callback this is more reliable than
+        // Control.ModifierKeys, especially for Alt-combos.
         Keys mods = Keys.None;
-        if ((System.Windows.Forms.Control.ModifierKeys & Keys.Control) != 0)
+        if (IsDown(Keys.ControlKey) || IsDown(Keys.LControlKey) || IsDown(Keys.RControlKey))
             mods |= Keys.Control;
-        if ((System.Windows.Forms.Control.ModifierKeys & Keys.Alt) != 0)
+        if (IsDown(Keys.Menu) || IsDown(Keys.LMenu) || IsDown(Keys.RMenu))
             mods |= Keys.Alt;
-        if ((System.Windows.Forms.Control.ModifierKeys & Keys.Shift) != 0)
+        if (IsDown(Keys.ShiftKey) || IsDown(Keys.LShiftKey) || IsDown(Keys.RShiftKey))
             mods |= Keys.Shift;
+
+        if (mods == Keys.None)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                _pending = null;
+                PreviewText.Text   = RequireModifierText;
+                ApplyBtn.IsEnabled = false;
+            });
+            return true;
+        }
 
         _pending = new HotkeyDef(key, mods);
 
@@ -57,6 +74,8 @@ partial class HotkeyRecorderWindow : Window
 
         return true;   // swallow — don't let it reach WeChat
     }
+
+    private static bool IsDown(Keys key) => (GetAsyncKeyState((int)key) & 0x8000) != 0;
 
     // ── Buttons ──────────────────────────────────────────────────────────────
 

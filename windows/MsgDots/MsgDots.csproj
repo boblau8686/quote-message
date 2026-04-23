@@ -10,9 +10,14 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>MsgDots</AssemblyName>
     <RootNamespace>MsgDots</RootNamespace>
-    <!-- ApplicationIcon will be wired once AppIcon.ico is added to Resources\ -->
-    <!-- <ApplicationIcon>Resources\AppIcon.ico</ApplicationIcon> -->
-    <Version>0.1.0</Version>
+    <Title>消息点点</Title>
+    <Product>消息点点</Product>
+    <ApplicationIcon>Resources\AppIcon.ico</ApplicationIcon>
+    <Version>0.1.1</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
 </Project>

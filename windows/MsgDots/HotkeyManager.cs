@@ -47,6 +47,11 @@ sealed class HotkeyManager : IDisposable
     public bool Register(HotkeyDef hk)
     {
         Unregister();
+        if (!hk.HasSupportedModifier)
+        {
+            QMLog.Info($"hotkey registration skipped (missing modifier): {hk.Display}");
+            return false;
+        }
         uint mods = BuildMods(hk.Modifiers) | MOD_NOREPEAT;
         _registered = RegisterHotKey(_source!.Handle, HOTKEY_ID, mods, (uint)hk.Key);
         QMLog.Info(_registered

@@ -136,7 +136,7 @@ final class PermissionsWindowController: NSWindowController, NSWindowDelegate {
         hosting.view.frame = NSRect(x: 0, y: 0, width: 560, height: 300)
 
         let window = NSWindow(contentViewController: hosting)
-        window.title = "权限检查 — MsgDots"
+        window.title = "权限检查 — 消息点点"
         window.styleMask = [.titled, .closable]
         window.level = .floating            // stay above System Settings
         window.isReleasedWhenClosed = false // reopening must still work

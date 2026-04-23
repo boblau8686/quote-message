@@ -18,6 +18,7 @@ sealed class KeyboardHook : IDisposable
 
     const int WH_KEYBOARD_LL = 13;
     const int WM_KEYDOWN     = 0x0100;
+    const int WM_SYSKEYDOWN  = 0x0104;
 
     delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
@@ -59,7 +60,7 @@ sealed class KeyboardHook : IDisposable
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (nCode >= 0 && wParam == WM_KEYDOWN)
+        if (nCode >= 0 && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
         {
             var kb  = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
             var key = (Keys)kb.vkCode;

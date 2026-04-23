@@ -23,7 +23,7 @@ final class HotkeyRecorderWindowController: NSWindowController, NSWindowDelegate
         hosting.view.frame = NSRect(x: 0, y: 0, width: 380, height: 220)
 
         let window = NSWindow(contentViewController: hosting)
-        window.title = "更改快捷键 — MsgDots"
+        window.title = "更改快捷键 — 消息点点"
         window.styleMask = [.titled, .closable]
         window.level = .floating
         window.isReleasedWhenClosed = false

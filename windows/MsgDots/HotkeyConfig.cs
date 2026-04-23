@@ -9,6 +9,10 @@ namespace MsgDots;
 public record HotkeyDef(Keys Key, Keys Modifiers)
 {
     public static readonly HotkeyDef Default = new(Keys.Q, Keys.Control);
+    public bool HasSupportedModifier =>
+        Modifiers.HasFlag(Keys.Control) ||
+        Modifiers.HasFlag(Keys.Alt) ||
+        Modifiers.HasFlag(Keys.Shift);
 
     public string Display
     {
@@ -47,6 +51,12 @@ static class HotkeyConfig
 
     public static void Save(HotkeyDef hk)
     {
+        if (!hk.HasSupportedModifier)
+        {
+            QMLog.Info($"hotkey save ignored (missing modifier): {hk.Display}");
+            return;
+        }
+
         QMSettings.Set(KeyCode, hk.Key.ToString());
         QMSettings.Set(KeyMods, hk.Modifiers.ToString());
         QMSettings.Save();
